@@ -414,10 +414,8 @@ class SSHSession(Session):
             append_agent_keys=list(paramiko.Agent().get_keys())
 
             for key_filename in key_filenames:
-                is_cert = False
                 if key_filename.endswith("-cert.pub"):
                     pubkey_filename=key_filename[:-9]+".pub"
-                    is_cert = True
                 elif key_filename.endswith(".pub"):
                     pubkey_filename=key_filename[:-4]+".pub"
                 else:
@@ -430,8 +428,11 @@ class SSHSession(Session):
                 for idx, agent_key in enumerate(append_agent_keys):
                     if agent_key.asbytes() == file_key:
                         self.logger.debug("Prioritising SSH agent key found in %s",key_filename )
-                        if is_cert:
+                        try:
                             append_agent_keys[idx].load_certificate(key_filename)
+                        except (FileNotFoundError, ValueError):
+                            continue
+
                         prepend_agent_keys.append(append_agent_keys.pop(idx))
                         break
 
